@@ -2,7 +2,7 @@
 
 class AIService {
   constructor() {
-    this.backend = localStorage.getItem('ai_backend') || 'gemini'; // 'ollama' or 'gemini'
+    this.backend = localStorage.getItem('ai_backend') || 'ollama'; // 'ollama' or 'gemini'
     this.ollamaUrl = localStorage.getItem('ollama_url') || 'http://localhost:11434';
     this.geminiKey = localStorage.getItem('gemini_key') || '';
     this.geminiModel = 'gemini-2.0-flash';

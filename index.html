@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multimodal AI Assistant</title>
+  <meta name="description" content="A multimodal AI assistant that understands text, images, and voice. Powered by LLMs, OCR, Vision Transformers, and RAG pipeline.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- Sidebar Overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">✦</div>
+        <span>Multimodal AI</span>
+      </div>
+      <button class="btn-new-chat" id="btnNewChat" title="New chat">+ New</button>
+    </div>
+
+    <div class="sidebar-conversations" id="conversationList">
+      <!-- Conversations populated by JS -->
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="connection-status" id="connectionStatus">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Checking Ollama...</span>
+      </div>
+      <select class="model-selector" id="modelSelector" title="Select AI model">
+        <option value="">No models found</option>
+      </select>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main">
+    <div class="main-header">
+      <div class="header-left">
+        <button class="btn-sidebar-toggle" id="btnSidebarToggle" title="Toggle sidebar">☰</button>
+        <span class="header-model-badge" id="headerModelBadge">No model</span>
+      </div>
+      <div class="header-right">
+        <button class="btn-icon" id="btnDocPanel" title="Document panel">📄</button>
+        <button class="btn-icon" id="btnSettings" title="Settings">⚙️</button>
+      </div>
+    </div>
+
+    <!-- Chat Container -->
+    <div class="chat-container" id="chatContainer">
+      <!-- Welcome Screen -->
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-icon">✦</div>
+        <h1 class="welcome-title">Multimodal AI Assistant</h1>
+        <p class="welcome-subtitle">I can understand text, analyze images, listen to your voice, and answer questions from your documents.</p>
+        <div class="feature-cards">
+          <div class="feature-card" data-prompt="Explain quantum computing in simple terms">
+            <div class="feature-card-icon">💬</div>
+            <div class="feature-card-title">Text Chat</div>
+            <div class="feature-card-desc">Ask any question and get intelligent answers</div>
+          </div>
+          <div class="feature-card" data-prompt="What do you see in this image?">
+            <div class="feature-card-icon">🖼️</div>
+            <div class="feature-card-title">Image Analysis</div>
+            <div class="feature-card-desc">Upload images for visual understanding</div>
+          </div>
+          <div class="feature-card" data-action="voice">
+            <div class="feature-card-icon">🎙️</div>
+            <div class="feature-card-title">Voice Input</div>
+            <div class="feature-card-desc">Speak naturally, I'll understand</div>
+          </div>
+          <div class="feature-card" data-action="upload">
+            <div class="feature-card-icon">📑</div>
+            <div class="feature-card-title">Document Q&A</div>
+            <div class="feature-card-desc">Upload docs and ask questions about them</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div class="messages-wrapper" id="messagesWrapper" style="display:none;"></div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area">
+      <div class="input-area-inner">
+        <!-- Context Banner -->
+        <div class="context-banner" id="contextBanner" style="display:none;">
+          <span>📎 <span id="contextInfo">Using context from documents</span></span>
+          <button id="btnClearContext" title="Clear context">✕</button>
+        </div>
+
+        <!-- Attachment Preview -->
+        <div class="attachments-preview" id="attachmentsPreview"></div>
+
+        <!-- Input Wrapper -->
+        <div class="input-wrapper">
+          <textarea id="messageInput" placeholder="Send a message..." rows="1"></textarea>
+          <div class="input-actions">
+            <button class="btn-attach" id="btnAttach" title="Attach image">📎</button>
+            <input type="file" id="fileInput" accept="image/*" multiple style="display:none;">
+            <button class="btn-voice" id="btnVoice" title="Voice input">🎙️</button>
+            <button class="btn-send" id="btnSend" title="Send message">➤</button>
+          </div>
+        </div>
+        <div class="input-hint">AI-powered • Supports text, image & voice</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Document Panel (right side) -->
+  <div class="doc-panel hidden" id="docPanel">
+    <div class="doc-panel-header">
+      <span>📄 Documents</span>
+      <button class="btn-icon" id="btnCloseDocPanel" title="Close">✕</button>
+    </div>
+    <div class="doc-upload-zone" id="docUploadZone">
+      <div class="doc-upload-zone-icon">📤</div>
+      <div>Drop images here or click to upload</div>
+      <div style="font-size:11px;margin-top:4px;color:var(--text-tertiary)">Text will be extracted via OCR</div>
+      <input type="file" id="docFileInput" accept="image/*" multiple style="display:none;">
+    </div>
+    <div class="doc-list" id="docList"></div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-title">⚙️ Settings</div>
+    <div class="form-group">
+      <label class="form-label">AI Backend</label>
+      <select class="form-input" id="settingsBackend">
+        <option value="gemini">Google Gemini (Cloud — works for everyone)</option>
+        <option value="ollama">Ollama (Local — requires Ollama installed)</option>
+      </select>
+    </div>
+    <div class="form-group" id="geminiKeyGroup">
+      <label class="form-label">Gemini API Key <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent);font-size:11px;">(Get free key)</a></label>
+      <input class="form-input" id="settingsGeminiKey" type="password" placeholder="Enter your Gemini API key...">
+    </div>
+    <div class="form-group" id="ollamaUrlGroup" style="display:none;">
+      <label class="form-label">Ollama Server URL</label>
+      <input class="form-input" id="settingsUrl" type="text" value="http://localhost:11434" placeholder="http://localhost:11434">
+    </div>
+    <div class="form-group">
+      <label class="form-label">System Prompt (optional)</label>
+      <textarea class="form-input" id="settingsSystemPrompt" rows="3" placeholder="Custom instructions for the AI..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Voice Language</label>
+      <select class="form-input" id="settingsVoiceLang">
+        <option value="en-US">English (US)</option>
+        <option value="en-GB">English (UK)</option>
+        <option value="hi-IN">Hindi</option>
+        <option value="es-ES">Spanish</option>
+        <option value="fr-FR">French</option>
+        <option value="de-DE">German</option>
+        <option value="ja-JP">Japanese</option>
+        <option value="zh-CN">Chinese</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal" id="btnCancelSettings">Cancel</button>
+      <button class="btn-modal primary" id="btnSaveSettings">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Image Lightbox -->
+<div class="lightbox" id="lightbox">
+  <img id="lightboxImg" src="" alt="Preview">
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- CDN Dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+
+<!-- App Scripts (order matters) -->
+<script src="utils.js"></script>
+<script src="ai-service.js"></script>
+<script src="ocr-engine.js"></script>
+<script src="voice-handler.js"></script>
+<script src="rag-pipeline.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

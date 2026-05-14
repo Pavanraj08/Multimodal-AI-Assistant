@@ -94,6 +94,19 @@ class MultimodalAssistant {
     this.$.btnDocPanel.addEventListener('click', () => this.toggleDocPanel());
     this.$.btnCloseDocPanel.addEventListener('click', () => this.toggleDocPanel());
 
+    // Document upload from input bar
+    const btnDocUpload = document.getElementById('btnDocUpload');
+    const docFileInputMain = document.getElementById('docFileInputMain');
+    if (btnDocUpload && docFileInputMain) {
+      btnDocUpload.addEventListener('click', () => docFileInputMain.click());
+      docFileInputMain.addEventListener('change', (e) => {
+        this.handleDocUpload(e.target.files);
+        if (!this.$.docPanel.classList.contains('hidden')) { /* already visible */ }
+        else { this.toggleDocPanel(); }
+        docFileInputMain.value = '';
+      });
+    }
+
     // File inputs
     this.$.fileInput.addEventListener('change', (e) => this.handleFileAttach(e.target.files));
     this.$.docFileInput.addEventListener('change', (e) => this.handleDocUpload(e.target.files));
@@ -388,9 +401,14 @@ class MultimodalAssistant {
     const userMsg = { role: 'user', content: text || 'What is in this image?', images: [] };
     const base64Images = [];
 
+    // Save file data for OCR fallback before clearing
+    this.attachedFilesData = [];
+    this.attachedFilesNames = [];
     for (const f of this.attachedFiles) {
       userMsg.images.push(f.dataUrl);
       base64Images.push(f.base64);
+      this.attachedFilesData.push(f.dataUrl);
+      this.attachedFilesNames.push(f.name);
     }
 
     this.messages.push(userMsg);
@@ -422,17 +440,41 @@ class MultimodalAssistant {
       apiMessages.push({ role: m.role, content: m.content });
     }
 
-    // Determine model (use vision model if images attached)
+    // Determine model and handle images
     let options = {};
+    let ocrImageText = '';
+
     if (base64Images.length > 0) {
       const visionModel = this.ai.getBestVisionModel();
-      if (visionModel) {
+      if (visionModel && this.ai.backend === 'ollama') {
+        // Use vision model directly
         options.model = visionModel;
         options.images = base64Images;
-      } else {
+      } else if (this.ai.backend === 'gemini') {
+        // Gemini always supports vision
         options.images = base64Images;
-        showToast('No vision model found. Install llava: ollama pull llava', 'warning');
+      } else {
+        // No vision model — use OCR to extract text from images
+        showToast('Analyzing image with OCR...', 'info');
+        for (let i = 0; i < this.attachedFilesData.length; i++) {
+          try {
+            const result = await this.ocr.recognize(this.attachedFilesData[i]);
+            if (result.text) {
+              ocrImageText += `\n\n--- Image ${i + 1}: ${this.attachedFilesNames[i]} (OCR confidence: ${result.confidence.toFixed(0)}%) ---\n${result.text}`;
+            } else {
+              ocrImageText += `\n\n--- Image ${i + 1}: ${this.attachedFilesNames[i]} ---\n[No text detected in this image]`;
+            }
+          } catch (e) {
+            ocrImageText += `\n\n--- Image ${i + 1} ---\n[OCR failed: ${e.message}]`;
+          }
+        }
       }
+    }
+
+    // If OCR text was extracted, inject it into the last user message
+    if (ocrImageText) {
+      const lastUserMsg = apiMessages[apiMessages.length - 1];
+      lastUserMsg.content = `The user has attached image(s). Here is the text/content extracted from the image(s) via OCR:\n${ocrImageText}\n\nUser's message: ${lastUserMsg.content}\n\nPlease analyze the extracted content and respond to the user's question. Describe any structure, data, or information you can infer from the text.`;
     }
 
     // Generate response

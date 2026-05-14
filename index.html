@@ -68,10 +68,10 @@
             <div class="feature-card-title">Text Chat</div>
             <div class="feature-card-desc">Ask any question and get intelligent answers</div>
           </div>
-          <div class="feature-card" data-prompt="What do you see in this image?">
+          <div class="feature-card" data-prompt="Analyze this image and describe what you see">
             <div class="feature-card-icon">🖼️</div>
             <div class="feature-card-title">Image Analysis</div>
-            <div class="feature-card-desc">Upload images for visual understanding</div>
+            <div class="feature-card-desc">Upload images — OCR extracts text for analysis</div>
           </div>
           <div class="feature-card" data-action="voice">
             <div class="feature-card-icon">🎙️</div>
@@ -106,13 +106,15 @@
         <div class="input-wrapper">
           <textarea id="messageInput" placeholder="Send a message..." rows="1"></textarea>
           <div class="input-actions">
-            <button class="btn-attach" id="btnAttach" title="Attach image">📎</button>
-            <input type="file" id="fileInput" accept="image/*" multiple style="display:none;">
+            <button class="btn-attach" id="btnAttach" title="Attach image for analysis">📎</button>
+            <input type="file" id="fileInput" accept="image/*,.pdf,.txt,.doc,.docx" multiple style="display:none;">
+            <button class="btn-attach" id="btnDocUpload" title="Add document to knowledge base" style="font-size:15px;">📄+</button>
+            <input type="file" id="docFileInputMain" accept="image/*,.pdf,.txt" multiple style="display:none;">
             <button class="btn-voice" id="btnVoice" title="Voice input">🎙️</button>
             <button class="btn-send" id="btnSend" title="Send message">➤</button>
           </div>
         </div>
-        <div class="input-hint">AI-powered • Supports text, image & voice</div>
+        <div class="input-hint">AI-powered • Supports text, image & voice • 📎 Analyze image • 📄+ Add document</div>
       </div>
     </div>
   </div>
